@@ -100,5 +100,5 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     http.HandleFunc("/ws", websocketHandler)
-    log.Fatal(http.ListenAndServe(":8080", nil))
+    log.Fatal(http.ListenAndServe("https://audio-chat-server.vercel.app", nil))
 }
