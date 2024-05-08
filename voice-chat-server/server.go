@@ -7,6 +7,7 @@ import (
     "sync"
 
     "github.com/gorilla/websocket"
+    "os"
 )
 
 var upgrader = websocket.Upgrader{
@@ -100,5 +101,15 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     http.HandleFunc("/ws", websocketHandler)
-    log.Fatal(http.ListenAndServe(":8080", nil))
+
+    // Get the PORT from the environment
+    port := os.Getenv("PORT")
+    if port == "" {
+        log.Fatal("$PORT must be set")
+        return
+    }
+
+    // Start the server on the assigned port
+    log.Printf("Server is starting on port %s", port)
+    log.Fatal(http.ListenAndServe(":"+port, nil))
 }
