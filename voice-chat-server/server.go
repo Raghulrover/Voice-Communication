@@ -5,7 +5,7 @@ import (
     "net/http"
     "encoding/json"
     "sync"
-    "os"
+
     "github.com/gorilla/websocket"
 )
 
@@ -100,15 +100,5 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     http.HandleFunc("/ws", websocketHandler)
-    
-    // Get the PORT from the environment
-    port := os.Getenv("PORT")
-    if port == "" {
-        log.Fatal("$PORT must be set")
-        return
-    }
-
-    // Start the server on the dynamic port
-    log.Printf("Server is running on port %s", port)
-    log.Fatal(http.ListenAndServe(":"+port, nil))
+    log.Fatal(http.ListenAndServe("audio-chat-server.vercel.app", nil))
 }
