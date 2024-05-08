@@ -32,7 +32,7 @@ export default function Chat() {
 
 
 
-    const ws = new WebSocket(`wss://your-vercel-app.vercel.app/ws?roomID=${encodeURIComponent(roomID)}`);
+    const ws = new WebSocket(`wss://voice-communication.vercel.app/ws?roomID=${encodeURIComponent(roomID)}`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log(event.data)
