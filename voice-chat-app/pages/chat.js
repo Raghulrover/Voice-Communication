@@ -1,30 +1,165 @@
-package main
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/router';
+import {
+  Box,
+  Button,
+  VStack,
+  Heading,
+  Text,
+  HStack,
+  Avatar,
+  Spacer,
+  toast
+} from '@chakra-ui/react';
 
-import (
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-)
+export default function Chat() {
+  const router = useRouter();
+  const { name, roomID } = router.query;
+  const audioRef = useRef();
+  const [userCount, setUserCount] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [recording, setRecording] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  
 
-func main() {
-	port := os.Getenv("PORT")
+    
+    useEffect(() => {
+    if (!roomID || !name) {
+      router.push('/');
+      return;
+    }
 
-	if port == "" {
-		port = "8080"
-	}
+    // // Dynamic WebSocket URL based on environment
+    // const websocketURL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
+    const ws = new WebSocket(`wss://voice-communication-production.up.railway.app/ws?roomID=${encodeURIComponent(roomID)}`);
 
-	http.HandleFunc("/", HelloHandler)
-	http.HandleFunc("/new", NewHandler)
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log(event.data)
+      if (data.type === 'userCount') {
+        setUserCount(data.count);
+      }
+    };
 
-	log.Println("Listening on port", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-}
+    ws.onopen = () => {
+      console.log('WebSocket connection established');
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
 
-func HelloHandler(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprintf(w, "Hello from Koyeb")
-}
+    const mediaConstraints = { audio: true };
+    navigator.mediaDevices.getUserMedia(mediaConstraints)
+      .then(stream => {
+        audioRef.current.srcObject = stream;
+        const recorder = new MediaRecorder(stream);
+        setMediaRecorder(recorder);
 
-func NewHandler(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprintf(w, "Hello from Koyeb NEW ROUTE")
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            setRecordedChunks(prev => [...prev, event.data]);
+          }
+        };
+
+        recorder.onstop = () => {
+          if (recordedChunks.length === 0) {
+            toast({
+              title: "No recording to save",
+              description: "You did not record any audio.",
+              status: "warning",
+              duration: 2000,
+              isClosable: true,
+            });
+          }
+        };
+      })
+      .catch(error => {
+        console.error("Error accessing media devices.", error);
+        toast({
+          title: "Error accessing media devices",
+          description: "Unable to access microphone. Please check permissions.",
+          status: "error",
+          duration: 2000,
+          isClosable: true,
+        });
+      });
+
+
+
+    // Cleanup on unmount
+    return () => {
+      mediaRecorder?.stop();
+      recordedChunks.forEach(chunk => URL.revokeObjectURL(chunk));
+      ws.close();
+    };
+  }, [name, roomID]);
+
+  const toggleMute = () => {
+    const audioTrack = audioRef.current.srcObject.getAudioTracks()[0];
+    audioTrack.enabled = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const startRecording = () => {
+    setRecordedChunks([]);
+    mediaRecorder.start();
+    setRecording(true);
+  };
+
+  const stopRecording = () => {
+    mediaRecorder.stop();
+    setRecording(false);
+  };
+
+  const saveRecording = () => {
+    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recording_${new Date().toISOString()}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  return (
+    <VStack spacing={4} align="center" p={5}>
+    <Heading>Room: {roomID}</Heading>
+      <Heading>Welcome {name}!</Heading>
+	<Text>User count: {userCount}</Text>
+      <audio ref={audioRef} autoPlay />
+      <HStack spacing={4}>
+        <Button onClick={toggleMute}>{isMuted ? 'Unmute' : 'Mute'}</Button>
+        <Button onClick={recording ? stopRecording : startRecording}>
+          {recording ? 'Stop Recording' : 'Start Recording'}
+        </Button>
+        <Button onClick={saveRecording} disabled={recordedChunks.length === 0}>
+          Save Recording
+        </Button>
+      </HStack>
+<VStack mt={10}>
+        {users.map(user => (
+          <Box key={user.id} p={5} shadow="md" borderWidth="1px">
+            <HStack>
+              <Avatar name={user.name || `User ${user.id}`} />
+              <Text>{user.name || `User ${user.id}`}</Text>
+            </HStack>
+          </Box>
+        ))}
+        <Spacer />
+      <Button colorScheme="blue" onClick={() => router.push('/')}>
+        Leave Room
+      </Button>
+      </VStack>
+    </VStack>
+  );
 }
