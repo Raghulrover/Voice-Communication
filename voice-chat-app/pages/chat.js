@@ -147,11 +147,11 @@ export default function Chat() {
         </Button>
       </HStack>
 <VStack mt={10}>
-        {users.map(user => (
-          <Box key={user.id} p={5} shadow="md" borderWidth="1px">
+{Array.from({ length: userCount }).map((_, index) => (
+          <Box key={index} p={5} shadow="md" borderWidth="1px">
             <HStack>
-              <Avatar name={user.name || `User ${user.id}`} />
-              <Text>{user.name || `User ${user.id}`}</Text>
+              <Avatar name={`User ${index + 1}`} />
+              <Text>User {index + 1}</Text>
             </HStack>
           </Box>
         ))}
