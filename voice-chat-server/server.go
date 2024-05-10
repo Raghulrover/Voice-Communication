@@ -110,6 +110,6 @@ func main() {
     }
 
     // Start the server on the assigned port
-    log.Printf("Server is starting on port %s", port)
+    log.Printf("Server in starting on port %s", port)
     log.Fatal(http.ListenAndServe(":"+port, nil))
 }
