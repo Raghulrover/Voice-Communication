@@ -62,11 +62,12 @@ func (room *Room) leaveRoom(ws *websocket.Conn) {
     room.broadcastUserCount()
 }
 
+// Updated broadcast function
 func (room *Room) broadcast(message []byte, sender *websocket.Conn) {
     room.lock.Lock()
     defer room.lock.Unlock()
     for conn := range room.peers {
-        if conn != sender {
+        if conn != sender { // Only send to other connections, not the sender
             conn.WriteMessage(websocket.TextMessage, message)
         }
     }
@@ -102,14 +103,12 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
     http.HandleFunc("/ws", websocketHandler)
 
-    // Get the PORT from the environment
     port := os.Getenv("PORT")
     if port == "" {
         log.Fatal("$PORT must be set")
         return
     }
 
-    // Start the server on the assigned port
-    log.Printf("Server in starting on port %s", port)
+    log.Printf("Server starting on port %s", port)
     log.Fatal(http.ListenAndServe(":"+port, nil))
 }
